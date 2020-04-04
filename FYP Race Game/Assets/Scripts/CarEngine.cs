@@ -18,6 +18,9 @@ public class CarEngine : MonoBehaviour
     public float maxBreakTorque = 150f;
     public bool isBraking;
 
+    [Header("Sensors")]
+    public float sensorLength = 2f;
+    public float frontSensorPosition = 0.5f;
 
     private List<Transform> Cube;
     private int currentCube = 0;
@@ -43,10 +46,24 @@ public class CarEngine : MonoBehaviour
     // Update is called once per frame
     private void FixedUpdate()
     {
+        Sensors();
         applySteer();
         Drive();
         checkWayPointDistance();
         braking();
+    }
+
+    private void Sensors()
+    {
+        RaycastHit hit;
+        Vector3 SensorStartPosition = transform.position;
+        SensorStartPosition.z += frontSensorPosition;
+
+        if(Physics.Raycast(SensorStartPosition, transform.forward, out hit, sensorLength))
+        {
+
+        }
+        Debug.DrawLine(SensorStartPosition, hit.point);
     }
 
     private void applySteer()
@@ -76,7 +93,7 @@ public class CarEngine : MonoBehaviour
 
     private void checkWayPointDistance()
     {
-        if (Vector3.Distance(transform.position, Cube[currentCube].position) < 5f)
+        if (Vector3.Distance(transform.position, Cube[currentCube].position) < 10f)
         {
             if (currentCube == Cube.Count - 1)
             {
