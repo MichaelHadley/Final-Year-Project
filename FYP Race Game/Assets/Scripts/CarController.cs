@@ -31,6 +31,7 @@ public class CarController : MonoBehaviour
 
     void Update()
     {
+        // speedometer
         UIM.changeText(transform.InverseTransformVector(RB.velocity).z);
     }
 
