@@ -11,35 +11,60 @@ public class LapComplete : MonoBehaviour
     public GameObject secondDisplay;
     public GameObject millisecondDisplay;
 
-    //public GameObject lapTimeBox;
+    public GameObject lapCounter;
+    public int totalLaps;
+    public float gameTime;
 
+    public GameObject RaceFinished;
+
+    void Update()
+    {
+        if(totalLaps == 2)
+        {
+            RaceFinished.SetActive(true);
+        }
+    }
     void OnTriggerEnter(Collider other)
     {
-        if (LapTimer.secondCount <= 9)
+        totalLaps += 1;
+        gameTime = PlayerPrefs.GetFloat("gameTime");
+        if (gameTime > 5)
         {
-            secondDisplay.GetComponent<Text>().text = "0" + LapTimer.secondCount + ".";
-        }
-        else
-        {
-            secondDisplay.GetComponent<Text>().text = "" + LapTimer.secondCount + ".";
-        }
-      
-        if (LapTimer.minuteCount <= 9)
-        {
-            minuteDisplay.GetComponent<Text>().text = "0" + LapTimer.minuteCount + ".";
-        }
-        else
-        {
-            minuteDisplay.GetComponent<Text>().text = "" + LapTimer.minuteCount + ".";
-        }
+            if (LapTimer.gameTime <= gameTime)
+            {
+                if (LapTimer.secondCount <= 9)
+                {
+                    secondDisplay.GetComponent<Text>().text = "0" + LapTimer.secondCount + ".";
+                }
+                else
+                {
+                    secondDisplay.GetComponent<Text>().text = "" + LapTimer.secondCount + ".";
+                }
 
-        millisecondDisplay.GetComponent<Text>().text = "" + LapTimer.millisecondCount;
+                if (LapTimer.minuteCount <= 9)
+                {
+                    minuteDisplay.GetComponent<Text>().text = "0" + LapTimer.minuteCount + ".";
+                }
+                else
+                {
+                    minuteDisplay.GetComponent<Text>().text = "" + LapTimer.minuteCount + ".";
+                }
 
-        LapTimer.minuteCount = 0;
-        LapTimer.secondCount = 0;
-        LapTimer.millisecondCount = 0;
+                millisecondDisplay.GetComponent<Text>().text = "" + LapTimer.millisecondCount;
+            }
+            PlayerPrefs.SetInt("minuteSave", LapTimer.minuteCount);
+            PlayerPrefs.SetInt("secondSave", LapTimer.secondCount);
+            PlayerPrefs.SetFloat("millisecondSave", LapTimer.millisecondCount);
+            PlayerPrefs.SetFloat("gameTime", LapTimer.gameTime);
 
-        halfLapTrigger.SetActive(true);
-        lapCompleteTrigger.SetActive(false);
+        }
+            LapTimer.minuteCount = 0;
+            LapTimer.secondCount = 0;
+            LapTimer.millisecondCount = 0;
+            LapTimer.gameTime = 0;
+            lapCounter.GetComponent<Text>().text = "" + totalLaps;
+            halfLapTrigger.SetActive(true);
+            lapCompleteTrigger.SetActive(false);
+        
     }
 }

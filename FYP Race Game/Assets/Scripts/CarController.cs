@@ -12,8 +12,8 @@ public class CarController : MonoBehaviour
     public List<WheelCollider> throttleWheels;
     public List<GameObject> steerWheels;
     public List<GameObject> meshes;
-    public float strengthCoefficient = 10000f;
-    public float maxTurn = 20f;
+    public float breakHorsePower = 10000f;
+    public float maxTurn = 40f;
     public Transform centerMass;
     public Rigidbody RB;
     public float brakes;
@@ -43,11 +43,11 @@ public class CarController : MonoBehaviour
             if(IM.brake)
             {
                 wheel.motorTorque = 0f;
-                wheel.brakeTorque = brakes * Time.fixedDeltaTime;
+                wheel.brakeTorque = brakes * Time.fixedDeltaTime / 30f;
             }
             else
             {
-                wheel.motorTorque = strengthCoefficient * Time.fixedDeltaTime * IM.throttle;
+                wheel.motorTorque = breakHorsePower * Time.fixedDeltaTime * IM.throttle;
                 wheel.brakeTorque = 0f;
             }
         }

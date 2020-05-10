@@ -5,7 +5,6 @@ using UnityEngine.UI;
 public class Countdown : MonoBehaviour
 {
     public GameObject countDown;
-    public GameObject lapTimer;
     public GameObject carsManager;
 
     // Start is called before the first frame update
@@ -29,7 +28,6 @@ public class Countdown : MonoBehaviour
         countDown.SetActive(true);
         yield return new WaitForSeconds(1);
         countDown.SetActive(false);
-        lapTimer.SetActive(true);
         carsManager.SetActive(true);
     }
 }

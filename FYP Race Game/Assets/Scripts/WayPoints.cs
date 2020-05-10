@@ -5,12 +5,13 @@ using UnityEngine;
 public class WayPoints : MonoBehaviour{
 
     public Color lineColor;
-
+    
     private List<Transform> Cube = new List<Transform>();
 
     private void OnDrawGizmos(){
     Gizmos.color = lineColor;
 
+       
         Transform[] WayPointsTransform = GetComponentsInChildren<Transform>();
         Cube = new List<Transform>();
 
@@ -37,6 +38,8 @@ public class WayPoints : MonoBehaviour{
 
             Gizmos.DrawLine(PreviousCube, CurrentCube);
         }
+
+        
     }
 
 }
