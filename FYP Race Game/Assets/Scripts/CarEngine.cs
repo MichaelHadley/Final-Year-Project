@@ -5,21 +5,28 @@ using UnityEngine;
 public class CarEngine : MonoBehaviour
 {
     GameObject[] Cubes;
+    GameObject[] AICars;
+    GameObject[] PlayerCars;
     public Transform WayPoints;
-    public float maxSteerAngle = 40f;
+    public float maxSteerAngle;
     public WheelCollider wheelFrontLeft;
     public WheelCollider wheelFrontRight;
     public WheelCollider wheelRearLeft;
     public WheelCollider wheelRearRight;
     public float maxMotorTorque;
     public float currentSpeed;
-    public float topSpeed = 150f;
+    public float topSpeed;
     public Vector3 centerOfMass;
-    public float maxBreakTorque = 100f;
+    public float maxBreakTorque;
     public List <float> targetSpeedList;
+    public int positionNumber;
 
+    public int currentCube = 0;
+    public int currentLap = 0;
+    public float currentLapStartTime;
+    public float[] lapTimes;
 
-    private int currentCube = 0;
+    private int lapActive = 1;
     private float avoidFront = 0f;
     private float avoidLeft = 0f;
     private float avoidRight = 0f;
@@ -31,9 +38,32 @@ public class CarEngine : MonoBehaviour
         GetComponent<Rigidbody>().centerOfMass = centerOfMass; //Edit center of mass in the inspector
 
         Cubes = GameObject.FindGameObjectsWithTag("Cubes"); //Puts all cubes into and array, allows cars to follow the waypoints.
+        AICars = GameObject.FindGameObjectsWithTag("AICars"); //Puts all AI cars into and array, allows cars calculate rank in race.
+        PlayerCars = GameObject.FindGameObjectsWithTag("MyCar"); //Puts all Player cars into and array, allows cars calculate rank in race.
 
-       
+        currentLapStartTime = LapTimer.gameTime;
+        lapTimes = new float[3]; //Declare array for laptimes, adding 1 to allow for lap 0
     }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.name == "LapCompleteTrigger" && lapActive == 1)
+        {
+            //log laptime
+            lapTimes[currentLap] = LapTimer.gameTime - currentLapStartTime;
+            currentLapStartTime = LapTimer.gameTime;
+            
+            currentLap ++;
+                lapActive = 0;
+                // check main lap counter
+            if(currentLap > LapComplete.totalLaps)
+            {
+                LapComplete.totalLaps = currentLap;
+            }
+        }
+        
+    }
+
 
     // Update is called once per frame
     private void FixedUpdate()
@@ -131,6 +161,9 @@ public class CarEngine : MonoBehaviour
         wheelFrontRight.steerAngle = totalSteer;
     }
     
+
+
+
     private void Drive()
     {
         currentSpeed = 2 * Mathf.PI * wheelFrontLeft.radius * wheelRearLeft.rpm * 60 / 1000; //calculates current speed based off how fast the wheel is spinning. Uses rear wheels to avoid false values from wheel spin
@@ -139,12 +172,7 @@ public class CarEngine : MonoBehaviour
         if (currentSpeed < topSpeed && currentSpeed < Cubes[currentCube].GetComponent<Cubes>().targetSpeed)
         {
             //limit acceleration when at slower speeds
-            if (currentSpeed < 20f)
-            {
-                wheelFrontLeft.motorTorque = maxMotorTorque / 4;
-                wheelFrontRight.motorTorque = maxMotorTorque / 4;
-            }
-            else if(currentSpeed < 40f)
+            if(currentSpeed < 40f)
             {
                 wheelFrontLeft.motorTorque = maxMotorTorque / 2;
                 wheelFrontRight.motorTorque = maxMotorTorque / 2;
@@ -175,39 +203,164 @@ public class CarEngine : MonoBehaviour
             //braking applied to all 4 wheels and depends on speed.
             if (currentSpeed > 80f)
             {
-                wheelFrontLeft.brakeTorque = 4f;
-                wheelFrontRight.brakeTorque = 4f;
-                wheelRearLeft.brakeTorque = 4f;
-                wheelRearRight.brakeTorque = 4f;
+                wheelFrontLeft.brakeTorque = maxBreakTorque / 100;
+                wheelFrontRight.brakeTorque = maxBreakTorque / 100;
+                wheelRearLeft.brakeTorque = maxBreakTorque / 100;
+                wheelRearRight.brakeTorque = maxBreakTorque / 100;
             }
             else if (currentSpeed > 30f)
             {
-                wheelFrontLeft.brakeTorque = 2f;
-                wheelFrontRight.brakeTorque = 2f;
-                wheelRearLeft.brakeTorque = 2f;
-                wheelRearRight.brakeTorque = 2f;
+                wheelFrontLeft.brakeTorque = maxBreakTorque / 200;
+                wheelFrontRight.brakeTorque = maxBreakTorque / 200;
+                wheelRearLeft.brakeTorque = maxBreakTorque / 200;
+                wheelRearRight.brakeTorque = maxBreakTorque / 200;
             }
             else
             {
-                wheelFrontLeft.brakeTorque = 1f;
-                wheelFrontRight.brakeTorque = 1f;
-                wheelRearLeft.brakeTorque = 1f;
-                wheelRearRight.brakeTorque = 1f;
+                wheelFrontLeft.brakeTorque = maxBreakTorque / 400;
+                wheelFrontRight.brakeTorque = maxBreakTorque / 400;
+                wheelRearLeft.brakeTorque = maxBreakTorque / 400;
+                wheelRearRight.brakeTorque = maxBreakTorque / 400;
             }
             
         }
         
     }
 
+
+
+
     private void checkWayPointDistance()
     {
+        int myCube;
+        int otherCube;
+        int carsAhead=0;
+
         //if car is within 10 of waypoint then move to next one. Compares centre to centre only
         if (Vector3.Distance(transform.position, Cubes[currentCube].transform.position) < 10f)
         {
+            //myCube and other Cube is cube number we are up to, including lap * 1000 to allow for the same cube on multiple laps
+            myCube = currentLap * 1000 + currentCube;
+            //Check all the AI cars and player cars to count how many are ahead (to workout position of this car)
+            //Needs to be done in 2 loops as there are 2 different classes used
+            foreach (GameObject otherCar in AICars)
+            {
+                if (otherCar.name != this.name)
+                {
+                    otherCube = otherCar.GetComponent<CarEngine>().currentLap * 1000 + otherCar.GetComponent<CarEngine>().currentCube;
+                    if (otherCube > myCube)
+                    {
+                        carsAhead++;
+                    }
+
+                }
+            }
+            foreach (GameObject otherCar in PlayerCars)
+            {
+                if (otherCar.name != this.name)
+                {
+                    otherCube = otherCar.GetComponent<CarController>().currentLap * 1000 + otherCar.GetComponent<CarController>().currentCube;
+                    if (otherCube > myCube)
+                    {
+                        carsAhead++;
+                    }
+                }
+            }
+
+            //Update the position of the cars, looping twice for the different classes
+            foreach (GameObject otherCar in AICars)
+            {
+                if (otherCar.name != this.name)
+                {
+                    //If other car is not one that is ahead and not already behind this car then it has been overtaken and the position moves back by one (eg 3rd goes to 4th)
+                    if (otherCar.GetComponent<CarEngine>().positionNumber > carsAhead && otherCar.GetComponent<CarEngine>().positionNumber <= positionNumber)
+                    {
+                        otherCar.GetComponent<CarEngine>().positionNumber += 1;
+                        if (otherCar.GetComponent<CarEngine>().positionNumber == 1)
+                        {
+                            LapTimer.pos1Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarEngine>().positionNumber == 2)
+                        {
+                            LapTimer.pos2Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarEngine>().positionNumber == 3)
+                        {
+                            LapTimer.pos3Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarEngine>().positionNumber == 4)
+                        {
+                            LapTimer.pos4Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarEngine>().positionNumber == 5)
+                        {
+                            LapTimer.pos5Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                        }
+                    }
+
+                }
+            }
+            foreach (GameObject otherCar in PlayerCars)
+            {
+                if (otherCar.name != this.name)
+                {
+                    if (otherCar.GetComponent<CarController>().positionNumber > carsAhead && otherCar.GetComponent<CarController>().positionNumber <= positionNumber)
+                    {
+                        otherCar.GetComponent<CarController>().positionNumber += 1;
+                        if (otherCar.GetComponent<CarController>().positionNumber == 1)
+                        {
+                            LapTimer.pos1Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarController>().positionNumber == 2)
+                        {
+                            LapTimer.pos2Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarController>().positionNumber == 3)
+                        {
+                            LapTimer.pos3Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarController>().positionNumber == 4)
+                        {
+                            LapTimer.pos4Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                        }
+                        else if (otherCar.GetComponent<CarController>().positionNumber == 5)
+                        {
+                            LapTimer.pos5Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                        }
+                    }
+                }
+            }
+            //Update this car position to be 1 after cars ahead (2 cars ahead would mean that position is 3rd)
+            positionNumber = carsAhead + 1;
+            if (positionNumber == 1)
+            {
+                LapTimer.pos1Name = name.Substring(16);
+            }
+            else if (positionNumber == 2)
+            {
+                LapTimer.pos2Name = name.Substring(16);
+            }
+            else if (positionNumber == 3)
+            {
+                LapTimer.pos3Name = name.Substring(16);
+            }
+            else if (positionNumber == 4)
+            {
+                LapTimer.pos4Name = name.Substring(16);
+            }
+            else if (positionNumber == 5)
+            {
+                LapTimer.pos5Name = name.Substring(16);
+            }
+
+
+
+
             //move to next cube, but if at end of lap wrap around to cube 0
             if (currentCube == Cubes.Length - 1)
             {
                 currentCube = 0;
+                lapActive = 1; 
             }
             else
             {
@@ -228,9 +381,125 @@ public class CarEngine : MonoBehaviour
                 Vector3 vertexInWorld = localToWorld.MultiplyPoint3x4(vertex);
                 if (Vector3.Distance(transform.position, vertexInWorld) < 10f)
                 {
+                    //myCube and other Cube is cube number we are up to, including lap * 1000 to allow for the same cube on multiple laps
+                    myCube = currentLap * 1000 + currentCube;
+                    //Check all the AI cars and player cars to count how many are ahead (to workout position of this car)
+                    //Needs to be done in 2 loops as there are 2 different classes used
+                    foreach (GameObject otherCar in AICars)
+                    {
+                        if(otherCar.name != this.name)
+                        {
+                            otherCube = otherCar.GetComponent<CarEngine>().currentLap * 1000 + otherCar.GetComponent<CarEngine>().currentCube;
+                            if (otherCube > myCube)
+                            {
+                                carsAhead++;
+                            }
+                            
+                        }
+                    }
+                    foreach (GameObject otherCar in PlayerCars)
+                    {
+                        if (otherCar.name != this.name)
+                        {
+                            otherCube = otherCar.GetComponent<CarController>().currentLap * 1000 + otherCar.GetComponent<CarController>().currentCube;
+                            if (otherCube > myCube)
+                            {
+                                carsAhead++;
+                            }
+                        }
+                    }
+
+                    //Update the position of the cars, looping twice for the different classes
+                    foreach (GameObject otherCar in AICars)
+                    {
+                        if (otherCar.name != this.name)
+                        {   
+                            //If other car is not one that is ahead and not already behind this car then it has been overtaken and the position moves back by one (eg 3rd goes to 4th)
+                            if (otherCar.GetComponent<CarEngine>().positionNumber > carsAhead && otherCar.GetComponent<CarEngine>().positionNumber <= positionNumber)
+                            {
+                                otherCar.GetComponent<CarEngine>().positionNumber += 1;
+                                if (otherCar.GetComponent<CarEngine>().positionNumber == 1)
+                                {
+                                    LapTimer.pos1Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarEngine>().positionNumber == 2)
+                                {
+                                    LapTimer.pos2Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarEngine>().positionNumber == 3)
+                                {
+                                    LapTimer.pos3Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarEngine>().positionNumber == 4)
+                                {
+                                    LapTimer.pos4Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarEngine>().positionNumber == 5)
+                                {
+                                    LapTimer.pos5Name = otherCar.GetComponent<CarEngine>().name.Substring(16);
+                                }
+                            }
+
+                        }
+                    }
+                    foreach (GameObject otherCar in PlayerCars)
+                    {
+                        if (otherCar.name != this.name)
+                        {
+                            if (otherCar.GetComponent<CarController>().positionNumber > carsAhead && otherCar.GetComponent<CarController>().positionNumber <= positionNumber)
+                            {
+                                otherCar.GetComponent<CarController>().positionNumber += 1;
+                                if (otherCar.GetComponent<CarController>().positionNumber == 1)
+                                {
+                                    LapTimer.pos1Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarController>().positionNumber == 2)
+                                {
+                                    LapTimer.pos2Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarController>().positionNumber == 3)
+                                {
+                                    LapTimer.pos3Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarController>().positionNumber == 4)
+                                {
+                                    LapTimer.pos4Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                                }
+                                else if (otherCar.GetComponent<CarController>().positionNumber == 5)
+                                {
+                                    LapTimer.pos5Name = otherCar.GetComponent<CarController>().name.Substring(16);
+                                }
+                            }
+                        }
+                    }
+                    //Update this car position to be 1 after cars ahead (2 cars ahead would mean that position is 3rd)
+                    positionNumber = carsAhead + 1;
+                    if (positionNumber == 1)
+                    {
+                        LapTimer.pos1Name = name.Substring(16);
+                    }
+                    else if (positionNumber == 2)
+                    {
+                        LapTimer.pos2Name = name.Substring(16);
+                    }
+                    else if (positionNumber == 3)
+                    {
+                        LapTimer.pos3Name = name.Substring(16);
+                    }
+                    else if (positionNumber == 4)
+                    {
+                        LapTimer.pos4Name = name.Substring(16);
+                    }
+                    else if (positionNumber == 5)
+                    {
+                        LapTimer.pos5Name = name.Substring(16);
+                    }
+
+
                     if (currentCube == Cubes.Length - 1)
                     {
                         currentCube = 0;
+                        lapActive = 1;
                         break;//Break used so if match is found the code exits the foreach loop and doesn't increase current cube by more than 1
                     }
                     else

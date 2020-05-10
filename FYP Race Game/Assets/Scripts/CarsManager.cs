@@ -11,14 +11,18 @@ public class CarsManager : MonoBehaviour
     public GameObject yellowCar;
     public GameObject loadTimer;
     public GameObject lapTimer;
+    public LapComplete lapComplete;
+
     void Start()
     {
+        
+        lapTimer.GetComponent<LapTimer>().enabled = true;
+        loadTimer.GetComponent<LoadLapTime>().enabled = true;
         playerOne.GetComponent<CarController>().enabled = true;
         carbonCar.GetComponent<CarEngine>().enabled = true;
         grayCar.GetComponent<CarEngine>().enabled = true;
         redCar.GetComponent<CarEngine>().enabled = true;
         yellowCar.GetComponent<CarEngine>().enabled = true;
-        loadTimer.GetComponent<LoadLapTime>().enabled = true;
-        lapTimer.GetComponent<LapTimer>().enabled = true;
+        
     }
 }

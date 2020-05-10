@@ -10,10 +10,12 @@ public class LoadLapTime : MonoBehaviour
     public GameObject minuteDisplay;
     public GameObject secondDisplay;
     public GameObject millisecondDisplay;
-   
+    
+
     // Start is called before the first frame update
     void Start()
     {
+        /*
         minuteCount = PlayerPrefs.GetInt("minuteSave");
         secondCount = PlayerPrefs.GetInt("secondSave");
         millisecondCount = PlayerPrefs.GetFloat("millisecondSave");
@@ -21,7 +23,8 @@ public class LoadLapTime : MonoBehaviour
         minuteDisplay.GetComponent<Text>().text = "" + minuteCount;
         secondDisplay.GetComponent<Text>().text = "" + secondCount;
         millisecondDisplay.GetComponent<Text>().text = "" + millisecondCount;
-
+        */
+        
     }
 
 }

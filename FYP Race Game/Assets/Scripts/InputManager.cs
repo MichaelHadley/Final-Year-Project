@@ -15,5 +15,7 @@ public class InputManager : MonoBehaviour
         steer = Input.GetAxis("Horizontal");
         
         brake = Input.GetKey(KeyCode.Space);
+
+        //Pause menu keypress code here
     }
 }
