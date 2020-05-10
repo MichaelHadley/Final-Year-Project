@@ -20,6 +20,9 @@ public class CarEngine : MonoBehaviour
 
 
     private int currentCube = 0;
+    private float avoidFront = 0f;
+    private float avoidLeft = 0f;
+    private float avoidRight = 0f;
 
     // Start is called before the first frame update
     void Start()
@@ -35,22 +38,99 @@ public class CarEngine : MonoBehaviour
     // Update is called once per frame
     private void FixedUpdate()
     {
+        RadarCheck();
         applySteer();
         Drive();
         checkWayPointDistance();
     }
 
-  
+    private void RadarCheck()
+    {
+        //Avoid any cars in front, drive to left or right of them
+        //9 is the layer number assigned to cars, detection will then only detect collisions with cars
+        int layerMask = 1 << 9;
+        RaycastHit hit;
+        if (Physics.SphereCast(transform.position, 1, transform.forward, out hit, 5, layerMask))
+        {
+            Debug.DrawRay(transform.position, transform.forward * 6, Color.red);
+            //check if car in front is more left or right and go around
+            if (transform.InverseTransformPoint(hit.transform.position).x < 0)
+            {
+                avoidFront = maxSteerAngle;
+            }
+            else
+            {
+                avoidFront = -maxSteerAngle;
+            }
+
+        }
+        else
+        {
+            //if hit nothing set avoid front to 0.
+            Debug.DrawRay(transform.position, transform.forward * 6, Color.green);
+            avoidFront = 0f;
+        }
+
+
+        //Avoid anything at the side of the car, based on the distance from the front wheels
+        //Left Wheel
+        Vector3 leftWheelPos = wheelFrontLeft.gameObject.transform.position;
+        Vector3 leftOutDirection = new Vector3(-transform.forward.z, 0, transform.forward.x);
+        if (Physics.Raycast(leftWheelPos, leftOutDirection, 1))
+        {
+            Debug.DrawRay(leftWheelPos, leftOutDirection * 1, Color.red);
+            avoidLeft = 0.25f * maxSteerAngle; //Turn part of max steering, not as harsh as avoiding front end collision
+        }
+        else
+        {
+            Debug.DrawRay(leftWheelPos, leftOutDirection * 1, Color.green);
+            avoidLeft = 0f;
+        }
+
+
+        //Right Wheel
+        Vector3 rightWheelPos = wheelFrontRight.gameObject.transform.position;
+        Vector3 rightOutDirection = new Vector3(transform.forward.z, 0, -transform.forward.x);
+        if (Physics.Raycast(rightWheelPos, rightOutDirection, 1))
+        {
+            Debug.DrawRay(rightWheelPos, rightOutDirection * 1, Color.red);
+            avoidRight = -0.25f * maxSteerAngle; //Turn part of max steering, not as harsh as avoiding front end collision
+        }
+        else
+        {
+            Debug.DrawRay(rightWheelPos, rightOutDirection * 1, Color.green);
+            avoidRight = 0f;
+        }
+
+    }
+
 
     private void applySteer()
     {
+        // Work out direction to waypoint
         Vector3 reletiveVector = transform.InverseTransformPoint(Cubes[currentCube].transform.position);
-        reletiveVector = reletiveVector / reletiveVector.magnitude; // devide reletiveVector by length of reletiveVector 
-        float newSteer = (reletiveVector.x / reletiveVector.magnitude) * maxSteerAngle; // reletiveVector.magnitude equals the length of the vector
-        wheelFrontLeft.steerAngle = newSteer;
-        wheelFrontRight.steerAngle = newSteer;
-    }
+        // Normalize the vector to get a length one vector and apply x component to steering
+        float newSteer = reletiveVector.normalized.x * maxSteerAngle;
 
+
+        //Add collision avoidance steering to new steer to get the total steering direction
+        float totalSteer = newSteer + avoidLeft + avoidRight + avoidFront;
+        //check that total steer has not gone above max steer limit and cap it at that if it has (negative version needed if steering is to the left)
+        if(totalSteer > maxSteerAngle)
+        {
+            totalSteer = maxSteerAngle;
+        }
+        else if(totalSteer < -maxSteerAngle)
+        {
+            totalSteer = -maxSteerAngle;
+        }
+
+
+        //apply steering to front wheels
+        wheelFrontLeft.steerAngle = totalSteer;
+        wheelFrontRight.steerAngle = totalSteer;
+    }
+    
     private void Drive()
     {
         currentSpeed = 2 * Mathf.PI * wheelFrontLeft.radius * wheelRearLeft.rpm * 60 / 1000; //calculates current speed based off how fast the wheel is spinning. Uses rear wheels to avoid false values from wheel spin
