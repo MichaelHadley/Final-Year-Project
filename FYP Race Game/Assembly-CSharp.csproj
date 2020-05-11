@@ -63,6 +63,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+<<<<<<< HEAD
     <Compile Include="Assets\Asset\Scripts\CameraManager.cs" />
     <Compile Include="Assets\Asset\Scripts\CarController.cs" />
     <Compile Include="Assets\Asset\Scripts\CarEngine.cs" />
@@ -76,6 +77,23 @@
     <Compile Include="Assets\Asset\Scripts\RaceFinished.cs" />
     <Compile Include="Assets\Asset\Scripts\UIManager.cs" />
     <Compile Include="Assets\Asset\Scripts\WayPoints.cs" />
+=======
+    <Compile Include="Assets\Asset\C# classes\AIRacerOne.cs" />
+    <Compile Include="Assets\Asset\C# classes\PlayerOne.cs" />
+    <Compile Include="Assets\Scripts\CameraManager.cs" />
+    <Compile Include="Assets\Scripts\CarController.cs" />
+    <Compile Include="Assets\Scripts\CarEngine.cs" />
+    <Compile Include="Assets\Scripts\CarsManager.cs" />
+    <Compile Include="Assets\Scripts\CarWheel.cs" />
+    <Compile Include="Assets\Scripts\Countdown.cs" />
+    <Compile Include="Assets\Scripts\Cubes.cs" />
+    <Compile Include="Assets\Scripts\InputManager.cs" />
+    <Compile Include="Assets\Scripts\LapComplete.cs" />
+    <Compile Include="Assets\Scripts\LapTimer.cs" />
+    <Compile Include="Assets\Scripts\RaceFinished.cs" />
+    <Compile Include="Assets\Scripts\UIManager.cs" />
+    <Compile Include="Assets\Scripts\WayPoints.cs" />
+>>>>>>> ea1967065f44f5bfec9fc8c67f7579cfe1b4fcfc
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro_Properties.cginc" />
