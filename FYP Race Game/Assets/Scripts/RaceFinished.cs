@@ -9,7 +9,7 @@ public class RaceFinished : MonoBehaviour
     public GameObject grayCar;
     public GameObject redCar;
     public GameObject yellowCar;
-    public GameObject loadTimer;
+    //public GameObject loadTimer;
     public GameObject lapTimer;
     public GameObject gameOverCam;
     public GameObject lapCompleteTrigger;
@@ -26,7 +26,7 @@ public class RaceFinished : MonoBehaviour
         grayCar.GetComponent<CarEngine>().enabled = false;
         redCar.GetComponent<CarEngine>().enabled = false;
         yellowCar.GetComponent<CarEngine>().enabled = false;
-        loadTimer.SetActive(false);
+        //loadTimer.SetActive(false);
         lapTimer.SetActive(false);
         playerOne.GetComponent<CarController>().enabled = false;
         playerOne.SetActive(true);

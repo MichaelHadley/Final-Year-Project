@@ -72,11 +72,9 @@
     <Compile Include="Assets\Scripts\CarWheel.cs" />
     <Compile Include="Assets\Scripts\Countdown.cs" />
     <Compile Include="Assets\Scripts\Cubes.cs" />
-    <Compile Include="Assets\Scripts\HalfWayPointTrigger.cs" />
     <Compile Include="Assets\Scripts\InputManager.cs" />
     <Compile Include="Assets\Scripts\LapComplete.cs" />
     <Compile Include="Assets\Scripts\LapTimer.cs" />
-    <Compile Include="Assets\Scripts\LoadLapTime.cs" />
     <Compile Include="Assets\Scripts\RaceFinished.cs" />
     <Compile Include="Assets\Scripts\UIManager.cs" />
     <Compile Include="Assets\Scripts\WayPoints.cs" />

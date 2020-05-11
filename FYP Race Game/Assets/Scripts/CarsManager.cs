@@ -15,9 +15,8 @@ public class CarsManager : MonoBehaviour
 
     void Start()
     {
-        
+        //Once the countdown class has finished counting turn on all the games classes below
         lapTimer.GetComponent<LapTimer>().enabled = true;
-        loadTimer.GetComponent<LoadLapTime>().enabled = true;
         playerOne.GetComponent<CarController>().enabled = true;
         carbonCar.GetComponent<CarEngine>().enabled = true;
         grayCar.GetComponent<CarEngine>().enabled = true;

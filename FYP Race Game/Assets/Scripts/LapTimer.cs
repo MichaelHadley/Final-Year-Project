@@ -19,6 +19,7 @@ public class LapTimer : MonoBehaviour
     public static string pos4Name;
     public static string pos5Name;
 
+    //GUI for the players position in the car
     public GameObject pos1NameBox;
     public GameObject pos2NameBox;
     public GameObject pos3NameBox;

@@ -26,10 +26,12 @@ public class CarEngine : MonoBehaviour
     public float currentLapStartTime;
     public float[] lapTimes;
 
-    private int lapActive = 1;
+    public int lapActive = 1;// variable for calculation when car is after final cube but not yet crossed the line and to make sure car completes all points before completing lap
     private float avoidFront = 0f;
     private float avoidLeft = 0f;
     private float avoidRight = 0f;
+    public float currentCubeStartTime = 0f;
+    public float rubberBandSpeedLimit = 100f;
 
     // Start is called before the first frame update
     void Start()
@@ -54,9 +56,10 @@ public class CarEngine : MonoBehaviour
             currentLapStartTime = LapTimer.gameTime;
             
             currentLap ++;
-                lapActive = 0;
+            lapActive = 0;
+            
                 // check main lap counter
-            if(currentLap > LapComplete.totalLaps)
+            if (currentLap > LapComplete.totalLaps)
             {
                 LapComplete.totalLaps = currentLap;
             }
@@ -72,6 +75,105 @@ public class CarEngine : MonoBehaviour
         applySteer();
         Drive();
         checkWayPointDistance();
+        rubberBanding();
+    }
+
+    private void rubberBanding()
+    {
+        float timeInCube;
+        int maxAICube = 0;
+        int runningAICars = 0;
+        int totalRunningAICubes = 0;
+        int runningPlayerCars = 0;
+        int totalRunningPlayerCubes = 0;
+        foreach (GameObject otherCar in AICars)
+        {
+            timeInCube = LapTimer.gameTime - otherCar.GetComponent<CarEngine>().currentCubeStartTime;
+            if (timeInCube < 10)
+            {
+                runningAICars++;
+                totalRunningAICubes += otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube;
+                if (otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube > maxAICube)
+                {
+                    maxAICube = otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube;
+                }
+            }
+        }
+        foreach (GameObject otherCar in PlayerCars)
+        {
+            timeInCube = LapTimer.gameTime - otherCar.GetComponent<CarController>().currentCubeStartTime;
+            //if (timeInCube < 10) No check for stopped player cars
+
+            runningPlayerCars++;
+            totalRunningPlayerCubes += otherCar.GetComponent<CarController>().currentLap * Cubes.Length + otherCar.GetComponent<CarController>().currentCube;
+
+        }
+
+        int averageAICube;
+
+        if (runningAICars == 0)
+        {
+            averageAICube = 9999;
+        }
+        else
+        {
+            averageAICube = totalRunningAICubes / runningAICars;
+        }
+
+        int averagePlayerCube;
+        if (runningPlayerCars == 0)
+        {
+            averagePlayerCube = 9999;
+        }
+        else
+        {
+            averagePlayerCube = totalRunningPlayerCubes / runningPlayerCars;
+        }
+
+        foreach (GameObject otherCar in AICars)
+        {
+            //If more than 5 cubes ahead of average positions slow AI car
+            if (otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube > averageAICube + 5
+                || otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube > averagePlayerCube + 5)
+            {
+                otherCar.GetComponent<CarEngine>().rubberBandSpeedLimit = 30f;
+            }
+            //If more than 2 - 5 cubes ahead of average positions and already slowed, then do not release until 2 cubes or less
+            else if (otherCar.GetComponent<CarEngine>().rubberBandSpeedLimit < 100f &&
+                (otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube > averageAICube + 2
+                || otherCar.GetComponent<CarEngine>().currentLap * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube > averagePlayerCube + 2) )
+            {
+                otherCar.GetComponent<CarEngine>().rubberBandSpeedLimit = otherCar.GetComponent<CarEngine>().rubberBandSpeedLimit;
+            }
+            //Release restriction if have not got up to 5 ahead or was more than 5 ahead and is now within 2
+            else
+            {
+                otherCar.GetComponent<CarEngine>().rubberBandSpeedLimit = 100f;
+            }
+        }
+        foreach (GameObject otherCar in PlayerCars)
+        {
+            //If more than 5 cubes ahead of front AI car  or average of all players (for adding multiplayer later) then slow player car
+            if (otherCar.GetComponent<CarController>().currentLap * Cubes.Length + otherCar.GetComponent<CarController>().currentCube > maxAICube + 5
+                || otherCar.GetComponent<CarController>().currentLap * Cubes.Length + otherCar.GetComponent<CarController>().currentCube > averagePlayerCube + 5)
+            {
+                otherCar.GetComponent<CarController>().rubberBandSpeedLimit = 30f;
+            }
+            //If more than 2 - 5 cubes ahead of front AI car and already slowed, then do not release until 2 cubes or less
+            else if (otherCar.GetComponent<CarController>().rubberBandSpeedLimit < 100f &&
+                (otherCar.GetComponent<CarController>().currentLap * Cubes.Length + otherCar.GetComponent<CarController>().currentCube > maxAICube + 2
+                || otherCar.GetComponent<CarController>().currentLap * Cubes.Length + otherCar.GetComponent<CarController>().currentCube > averagePlayerCube + 2) )
+            {
+                otherCar.GetComponent<CarController>().rubberBandSpeedLimit = otherCar.GetComponent<CarController>().rubberBandSpeedLimit;
+            }
+            //Release restriction if have not got up to 5 ahead or was more than 5 ahead and is now within 2
+            else
+            {
+                otherCar.GetComponent<CarController>().rubberBandSpeedLimit = 100f;
+            }
+        }
+
+
     }
 
     private void RadarCheck()
@@ -169,7 +271,7 @@ public class CarEngine : MonoBehaviour
         currentSpeed = 2 * Mathf.PI * wheelFrontLeft.radius * wheelRearLeft.rpm * 60 / 1000; //calculates current speed based off how fast the wheel is spinning. Uses rear wheels to avoid false values from wheel spin
 
         //limit speed to topspeed or target speed of current waypoint        
-        if (currentSpeed < topSpeed && currentSpeed < Cubes[currentCube].GetComponent<Cubes>().targetSpeed)
+        if (currentSpeed < topSpeed && currentSpeed < Cubes[currentCube].GetComponent<Cubes>().targetSpeed && currentSpeed < topSpeed * (rubberBandSpeedLimit /100))
         {
             //limit acceleration when at slower speeds
             if(currentSpeed < 40f)
@@ -239,15 +341,18 @@ public class CarEngine : MonoBehaviour
         //if car is within 10 of waypoint then move to next one. Compares centre to centre only
         if (Vector3.Distance(transform.position, Cubes[currentCube].transform.position) < 10f)
         {
-            //myCube and other Cube is cube number we are up to, including lap * 1000 to allow for the same cube on multiple laps
-            myCube = currentLap * 1000 + currentCube;
+            //myCube and other Cube is cube number we are up to, including lap * Cubes.Length to allow for the same cube on multiple laps
+            // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+            myCube = (currentLap + lapActive) * Cubes.Length + currentCube;
+
             //Check all the AI cars and player cars to count how many are ahead (to workout position of this car)
             //Needs to be done in 2 loops as there are 2 different classes used
             foreach (GameObject otherCar in AICars)
             {
                 if (otherCar.name != this.name)
                 {
-                    otherCube = otherCar.GetComponent<CarEngine>().currentLap * 1000 + otherCar.GetComponent<CarEngine>().currentCube;
+                    // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+                    otherCube = (otherCar.GetComponent<CarEngine>().currentLap + otherCar.GetComponent<CarEngine>().lapActive) * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube;
                     if (otherCube > myCube)
                     {
                         carsAhead++;
@@ -259,7 +364,8 @@ public class CarEngine : MonoBehaviour
             {
                 if (otherCar.name != this.name)
                 {
-                    otherCube = otherCar.GetComponent<CarController>().currentLap * 1000 + otherCar.GetComponent<CarController>().currentCube;
+                    // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+                    otherCube = (otherCar.GetComponent<CarController>().currentLap + otherCar.GetComponent<CarController>().lapActive) * Cubes.Length + otherCar.GetComponent<CarController>().currentCube;
                     if (otherCube > myCube)
                     {
                         carsAhead++;
@@ -357,10 +463,11 @@ public class CarEngine : MonoBehaviour
 
 
             //move to next cube, but if at end of lap wrap around to cube 0
+            currentCubeStartTime = LapTimer.gameTime;
             if (currentCube == Cubes.Length - 1)
             {
                 currentCube = 0;
-                lapActive = 1; 
+                lapActive = 1;
             }
             else
             {
@@ -381,15 +488,18 @@ public class CarEngine : MonoBehaviour
                 Vector3 vertexInWorld = localToWorld.MultiplyPoint3x4(vertex);
                 if (Vector3.Distance(transform.position, vertexInWorld) < 10f)
                 {
-                    //myCube and other Cube is cube number we are up to, including lap * 1000 to allow for the same cube on multiple laps
-                    myCube = currentLap * 1000 + currentCube;
+                    //myCube and other Cube is cube number we are up to, including lap * Cubes.Length to allow for the same cube on multiple laps
+                    // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+                    myCube = (currentLap + lapActive) * Cubes.Length + currentCube;
+                    
                     //Check all the AI cars and player cars to count how many are ahead (to workout position of this car)
                     //Needs to be done in 2 loops as there are 2 different classes used
                     foreach (GameObject otherCar in AICars)
                     {
                         if(otherCar.name != this.name)
                         {
-                            otherCube = otherCar.GetComponent<CarEngine>().currentLap * 1000 + otherCar.GetComponent<CarEngine>().currentCube;
+                            // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+                            otherCube = (otherCar.GetComponent<CarEngine>().currentLap + otherCar.GetComponent<CarEngine>().lapActive) * Cubes.Length + otherCar.GetComponent<CarEngine>().currentCube;
                             if (otherCube > myCube)
                             {
                                 carsAhead++;
@@ -401,7 +511,8 @@ public class CarEngine : MonoBehaviour
                     {
                         if (otherCar.name != this.name)
                         {
-                            otherCube = otherCar.GetComponent<CarController>().currentLap * 1000 + otherCar.GetComponent<CarController>().currentCube;
+                            // if just before start of the lap, then lap active is 1 and calulates as if on next lap
+                            otherCube = (otherCar.GetComponent<CarController>().currentLap + otherCar.GetComponent<CarController>().lapActive) * Cubes.Length + otherCar.GetComponent<CarController>().currentCube;
                             if (otherCube > myCube)
                             {
                                 carsAhead++;
@@ -495,7 +606,7 @@ public class CarEngine : MonoBehaviour
                         LapTimer.pos5Name = name.Substring(16);
                     }
 
-
+                    currentCubeStartTime = LapTimer.gameTime;
                     if (currentCube == Cubes.Length - 1)
                     {
                         currentCube = 0;
